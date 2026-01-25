@@ -1,0 +1,80 @@
+name: Build & Push to ECR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'docker/prod/**'
+      - 'requirements.txt'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    name: Build and push Docker image to ECR
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write        # Required for OIDC federation
+      contents: read         # Read repo
+
+    steps:
+      # ────────────────────────────────────────────────────────────────
+      # Checkout code
+      # ────────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ────────────────────────────────────────────────────────────────
+      # Configure AWS credentials via OIDC (no secrets needed)
+      # ────────────────────────────────────────────────────────────────
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   
+          aws-region: us-east-1
+
+      # ────────────────────────────────────────────────────────────────
+      # Login to Amazon ECR
+      # ────────────────────────────────────────────────────────────────
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ────────────────────────────────────────────────────────────────
+      # Set up Docker Buildx (for multi-platform builds)
+      # ────────────────────────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ────────────────────────────────────────────────────────────────
+      # Build & push multi-arch image (amd64 + arm64)
+      # ────────────────────────────────────────────────────────────────
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/prod/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}   # only push on push (not PR)
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/titanic-api:latest
+            ${{ steps.login-ecr.outputs.registry }}/titanic-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+
+      # ────────────────────────────────────────────────────────────────
+      # Optional: Print image digest for reference
+      # ────────────────────────────────────────────────────────────────
+      - name: Image digest
+        if: success()
+        run: |
+          echo "Image successfully pushed:"
+          echo "  Digest: ${{ steps.build-and-push.outputs.digest }}"
+          echo "  Tags: ${{ steps.login-ecr.outputs.registry }}/titanic-api:latest"
+          echo "  Commit SHA tag: ${{ steps.login-ecr.outputs.registry }}/titanic-api:${{ github.sha }}"
