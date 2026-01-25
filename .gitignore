@@ -1,0 +1,115 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+pipenv/
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+*.egg
+*.eggs/
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Logs and temporary files
+*.log
+logs/
+*.log.*
+tmp/
+temp/
+
+# Testing / Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+coverage/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+tox/
+.nox/
+
+# Dependency management
+Pipfile.lock
+poetry.lock
+requirements.txt.lock
+
+# Docker
+docker-compose.override.yml
+*.dockerignore.bak
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+kustomization.yaml.bak
+*.k8s.yaml.bak
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+terraform.tfvars.json
+override.tf
+override.tf.json
+*.tfplan
+crash.log
+
+# Secrets & sensitive files (never commit real secrets)
+.env
+.env.*
+!.env.example
+!.env.development.example
+!.env.production.example
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+*.secret
+*.secrets
+vault.hcl
+vault.env
+
+# Miscellaneous
+*.bak
+*.backup
+*.tmp
+*.temp
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Project-specific (add if you have these)
+# data/               # ← uncomment if you don't want to commit titanic.csv or large datasets
+# notebooks/          # ← Jupyter notebooks often shouldn't be committed
+.terraform.lock.hcl

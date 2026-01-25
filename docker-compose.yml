@@ -1,0 +1,71 @@
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: titanic-db-dev
+    environment:
+      POSTGRES_DB: titanic
+      POSTGRES_USER: titanic_user
+      POSTGRES_PASSWORD: titanic_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./app/titanic.sql:/docker-entrypoint-initdb.d/titanic.sql
+      - ./app/titanic.csv:/docker-entrypoint-initdb.d/titanic.csv
+    networks:
+      - titanic-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U titanic_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/dev/Dockerfile
+    container_name: titanic-api-dev
+    environment:
+      FLASK_ENV: development
+      DATABASE_URL: postgresql+psycopg2://titanic_user:titanic_password@postgres:5432/titanic
+      JWT_SECRET_KEY: dev-secret-key-change-in-production
+    ports:
+      - "5002:5000"
+    volumes:
+      - ./app:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - titanic-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: titanic-pgadmin-dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@titanic.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - titanic-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  titanic-network:
+    driver: bridge
