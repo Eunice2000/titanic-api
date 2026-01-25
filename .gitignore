@@ -112,3 +112,4 @@ vault.env
 # Project-specific (add if you have these)
 # data/               # ← uncomment if you don't want to commit titanic.csv or large datasets
 # notebooks/          # ← Jupyter notebooks often shouldn't be committed
+.terraform.lock.hcl
