@@ -32,6 +32,8 @@ Secrets
 .env
 *.pem
 *.key
+.env.production.example
+.env.development.example
 
 Kubernetes
 kubeconfig
