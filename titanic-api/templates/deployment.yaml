@@ -22,6 +22,7 @@ spec:
         app.kubernetes.io/name: {{ include "titanic-api.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}   # <-- Added here
       containers:
         - name: {{ include "titanic-api.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
