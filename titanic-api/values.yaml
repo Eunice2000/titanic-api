@@ -43,9 +43,10 @@ readinessProbe:
 
 serviceAccount:
   create: true
-  name: ""
+  name: titanic-api
   automount: true
-  annotations: {}
+  annotations: 
+        eks.amazonaws.com/role-arn: arn:aws:iam::479664683730:role/github-actions-ecr-push-role
 
 ingress:
   enabled: false
