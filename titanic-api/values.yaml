@@ -46,3 +46,13 @@ serviceAccount:
   name: ""
   automount: true
   annotations: {}
+  
+ingress:
+  enabled: false
+  annotations: {}
+  hosts:
+    - host: ""
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
