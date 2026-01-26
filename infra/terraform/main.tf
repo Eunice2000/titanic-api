@@ -331,6 +331,22 @@ resource "aws_iam_role_policy" "ecr_push" {
   policy = data.aws_iam_policy_document.ecr_push_policy.json
 }
 
+resource "aws_secretsmanager_secret" "titanic_api" {
+  name        = "/titanic-api/${var.environment}/rds"
+  description = "All PostgreSQL connection info for Titanic API"
+}
+
+resource "aws_secretsmanager_secret_version" "titanic_api" {
+  secret_id = aws_secretsmanager_secret.titanic_api.id
+  secret_string = jsonencode({
+    POSTGRES_USER     = "titanic_user"
+    POSTGRES_PASSWORD = random_password.db_password.result
+    POSTGRES_DB       = aws_db_instance.postgres.db_name
+    POSTGRES_HOST     = aws_db_instance.postgres.address
+    POSTGRES_PORT     = aws_db_instance.postgres.port
+  })
+}
+
 # Outputs
 output "ecr_repository_url" {
   value       = aws_ecr_repository.titanic_api.repository_url

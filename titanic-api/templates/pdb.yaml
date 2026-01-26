@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "titanic-api.fullname" . }}-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "titanic-api.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}

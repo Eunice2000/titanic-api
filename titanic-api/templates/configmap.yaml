@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "titanic-api.fullname" . }}-config
+  labels:
+    app.kubernetes.io/name: {{ include "titanic-api.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  APP_ENV: {{ .Values.env.APP_ENV | default "prod" }}
+  LOG_LEVEL: {{ .Values.env.LOG_LEVEL | default "info" }}

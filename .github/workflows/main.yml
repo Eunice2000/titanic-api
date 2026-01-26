@@ -19,6 +19,9 @@ jobs:
     permissions:
       id-token: write        # Required for OIDC federation
       contents: read         # Read repo
+    outputs:
+      ecr_registry: ${{ steps.login-ecr.outputs.registry }}
+      image_sha: ${{ github.sha }}
 
     steps:
       # ────────────────────────────────────────────────────────────────
@@ -33,7 +36,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
       # ────────────────────────────────────────────────────────────────
@@ -78,3 +81,42 @@ jobs:
           echo "  Digest: ${{ steps.build-and-push.outputs.digest }}"
           echo "  Tags: ${{ steps.login-ecr.outputs.registry }}/titanic-api:latest"
           echo "  Commit SHA tag: ${{ steps.login-ecr.outputs.registry }}/titanic-api:${{ github.sha }}"
+
+  deploy-to-prod:
+    name: Deploy to Prod via Helm
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+    if: github.event_name == 'push'  # Only deploy on push, not PR
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr-deploy
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: v1.30.0   # adjust based on cluster
+
+      - name: Configure kubeconfig
+        run: |
+          aws eks update-kubeconfig --region us-east-1 --name titanic-prod-cluster
+
+      - name: Deploy Helm chart to Prod
+        run: |
+          helm upgrade --install titanic-api ./helm/titanic-api \
+            --namespace prod \
+            --create-namespace \
+            --set image.repository=${{ steps.login-ecr-deploy.outputs.registry }}/titanic-api \
+            --set image.tag=${{ needs.build-and-push.outputs.image_sha }} \
+            --values ./helm/titanic-api/values.yaml
