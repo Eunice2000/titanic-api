@@ -37,13 +37,13 @@ variable "cluster_version" {
 variable "node_instance_type" {
   description = "EC2 instance type for EKS nodes"
   type        = string
-  default     = "t4g.small"  # cost-effective arm64
+  default     = "t4g.small" # cost-effective arm64
 }
 
 variable "db_instance_class" {
   description = "RDS instance class"
   type        = string
-  default     = "db.t4g.micro"  # free-tier eligible
+  default     = "db.t4g.micro" # free-tier eligible
 }
 
 variable "db_multi_az" {
