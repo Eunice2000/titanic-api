@@ -40,3 +40,9 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 10
   failureThreshold: 3
+
+serviceAccount:
+  create: true
+  name: ""
+  automount: true
+  annotations: {}
