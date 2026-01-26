@@ -97,7 +97,7 @@ jobs:
 
       - name: Deploy Helm chart to Prod
         run: |
-          helm upgrade --install titanic-api ./helm/titanic-api \
+          helm upgrade --install titanic-api ./titanic-api \
             --namespace prod \
             --create-namespace \
             --set image.repository=${{ steps.login-ecr-deploy.outputs.registry }}/titanic-api \
