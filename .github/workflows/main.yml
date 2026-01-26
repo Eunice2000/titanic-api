@@ -83,7 +83,7 @@ jobs:
           echo "  Commit SHA tag: ${{ steps.login-ecr.outputs.registry }}/titanic-api:${{ github.sha }}"
 
   deploy-to-prod:
-    name: Deploy to Prod via Helm
+    name: Deploy to Prod via Helm chart
     runs-on: ubuntu-latest
     needs: build-and-push
     environment: production
