@@ -69,9 +69,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     permissions:
-      id-token: write
-      contents: read
-    
+      id-token: write        # Required for OIDC federation
+      contents: read         # Read repo
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -95,28 +95,9 @@ jobs:
         run: |
           aws eks update-kubeconfig --region us-east-1 --name titanic-api-cluster
 
-      - name: Update aws-auth ConfigMap for GitHub Actions OIDC role
-        run: |
-          ROLE_ARN=${{ secrets.AWS_ROLE_ARN }}
-          kubectl get configmap aws-auth -n kube-system -o yaml > aws-auth.yaml
-          if ! grep -q "$ROLE_ARN" aws-auth.yaml; then
-            echo "Adding GitHub Actions role to aws-auth..."
-            kubectl patch configmap aws-auth -n kube-system --patch "
-            data:
-              mapRoles: |
-                $(kubectl get configmap aws-auth -n kube-system -o yaml | yq '.data.mapRoles' | sed '/^- rolearn:/d')
-                - rolearn: $ROLE_ARN
-                  username: github-actions
-                  groups:
-                    - system:masters
-            "
-          else
-            echo "GitHub Actions role already exists in aws-auth"
-          fi
-
       - name: Deploy Helm chart to Prod
         run: |
-          helm upgrade --install titanic-api ./titanic-api \
+          helm upgrade --install titanic-api ./helm/titanic-api \
             --namespace prod \
             --create-namespace \
             --set image.repository=${{ steps.login-ecr-deploy.outputs.registry }}/titanic-api \
