@@ -102,4 +102,4 @@ jobs:
             --create-namespace \
             --set image.repository=${{ steps.login-ecr-deploy.outputs.registry }}/titanic-api \
             --set image.tag=${{ needs.build-and-push.outputs.image_sha }} \
-            --values ./helm/titanic-api/values.yaml
+            --values ./titanic-api/values.yaml
