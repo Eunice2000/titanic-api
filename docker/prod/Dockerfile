@@ -35,7 +35,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
-# Copy only app code (chown to non-root)
+## Copy only app code (chown to non-root)
 COPY --chown=titanic:titanic app/ .
 
 # Ensure logs dir if needed (optional)
