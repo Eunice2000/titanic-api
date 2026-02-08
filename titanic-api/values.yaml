@@ -27,16 +27,16 @@ autoscaling:
 
 livenessProbe:
   httpGet:
-    path: /health
-    port: 5000     # Updated from 80 → 5000
+    path: /           # changed from /health to /
+    port: 5000
   initialDelaySeconds: 15
   periodSeconds: 20
   failureThreshold: 3
 
 readinessProbe:
   httpGet:
-    path: /health
-    port: 5000     # Updated from 80 → 5000
+    path: /           # changed from /health to /
+    port: 5000
   initialDelaySeconds: 5
   periodSeconds: 10
   failureThreshold: 3
