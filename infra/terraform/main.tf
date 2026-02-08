@@ -248,47 +248,6 @@ resource "aws_ecr_lifecycle_policy" "titanic_api" {
   })
 }
 
-# ────────────────────────────────────────────────────────────────
-# OIDC Provider for GitHub Actions
-# ────────────────────────────────────────────────────────────────
-
-resource "aws_iam_openid_connect_provider" "github" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]  # GitHub's current thumbprint (2024–2026 valid)
-}
-
-# ────────────────────────────────────────────────────────────────
-# IAM Role for GitHub Actions
-# ────────────────────────────────────────────────────────────────
-
-data "aws_iam_policy_document" "github_assume_role" {
-  statement {
-    effect = "Allow"
-
-    principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github.arn]
-    }
-
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-
-    condition {
-      test     = "StringLike"
-      variable = "token.actions.githubusercontent.com:sub"
-      values   = [
-        "repo:Eunice2000/titanic-api:*"
-      ]
-    }
-  }
-}
-
 resource "aws_iam_role" "github_ecr_push" {
   name               = "github-actions-ecr-push-role"
   assume_role_policy = data.aws_iam_policy_document.github_assume_role.json
@@ -321,7 +280,7 @@ data "aws_iam_policy_document" "ecr_push_policy" {
       "ecr:BatchDeleteImage"
     ]
 
-    resources = ["*"]  # Or restrict to aws_ecr_repository.titanic_api.arn
+    resources = ["aws_ecr_repository.titanic_api.arn"]
   }
 }
 
