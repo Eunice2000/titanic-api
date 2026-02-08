@@ -19,7 +19,7 @@ COPY app/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Runtime stage: Minimal image
+# Runtime stage: Minimal image 
 FROM python:3.9-slim
 
 # Security: non-root user
