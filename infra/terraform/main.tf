@@ -248,6 +248,10 @@ resource "aws_ecr_lifecycle_policy" "titanic_api" {
   })
 }
 
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+}
+
 # ────────────────────────────────────────────────────────────────
 # IAM Role for GitHub Actions
 # ────────────────────────────────────────────────────────────────
@@ -258,7 +262,7 @@ data "aws_iam_policy_document" "github_assume_role" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github.arn]
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
     }
 
     actions = ["sts:AssumeRoleWithWebIdentity"]
