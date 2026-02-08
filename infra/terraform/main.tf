@@ -430,7 +430,77 @@ resource "aws_eks_access_policy_association" "admin_user_cluster_admin" {
     type = "cluster"
   }
 }
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+      command     = "aws"
+    }
+  }
+}
 
+resource "helm_release" "external_secrets" {
+  name       = "external-secrets"
+  repository = "https://charts.external-secrets.io"
+  chart      = "external-secrets"
+  namespace  = "external-secrets"
+  create_namespace = true
+
+  set {
+    name  = "installCRDs"
+    value = "true"
+  }
+}
+
+# Trust policy for IRSA
+data "aws_iam_policy_document" "eso_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = [module.eks.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:external-secrets:external-secrets"]
+    }
+  }
+}
+
+resource "aws_iam_role" "eso" {
+  name               = "external-secrets-operator-role"
+  assume_role_policy = data.aws_iam_policy_document.eso_assume.json
+}
+
+# Attach minimal read policy
+resource "aws_iam_role_policy" "eso_secrets_read" {
+  name   = "secrets-read"
+  role   = aws_iam_role.eso.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = [
+          aws_secretsmanager_secret.titanic_api.arn,
+          aws_secretsmanager_secret.rds_password.arn
+        ]
+      }
+    ]
+  })
+}
 # ────────────────────────────────────────────────────────────────
 # Outputs
 # ────────────────────────────────────────────────────────────────
