@@ -104,7 +104,7 @@ module "eks" {
       instance_types = [var.node_instance_type]  # t4g.small
       capacity_type  = "SPOT"
 
-      ami_type = "AL2_ARM_64"
+      ami_type = "AL2023_ARM_64"
 
       labels = {
         role = "general"
@@ -315,7 +315,7 @@ data "aws_iam_policy_document" "ecr_push_policy" {
       "ecr:BatchDeleteImage"
     ]
 
-    resources = ["aws_ecr_repository.titanic_api.arn"]
+    resources = [aws_ecr_repository.titanic_api.arn]
   }
 }
 
@@ -416,27 +416,6 @@ resource "aws_secretsmanager_secret_version" "titanic_api" {
   })
 }
 
-resource "kubernetes_config_map" "aws_auth" {
-  metadata {
-    name      = "aws-auth"
-    namespace = "kube-system"
-  }
-
-  data = {
-    mapRoles = yamlencode([
-      {
-        rolearn  = module.eks.eks_managed_node_groups["main"].iam_role_arn
-        username = "system:node:{{EC2PrivateDNSName}}"
-        groups   = ["system:bootstrappers", "system:nodes"]
-      },
-      {
-        rolearn  = aws_iam_role.github_ecr_push.arn
-        username = "github-actions"
-        groups   = ["system:masters"]
-      }
-    ])
-  }
-}
 
 
 # ────────────────────────────────────────────────────────────────
