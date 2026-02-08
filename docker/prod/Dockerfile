@@ -25,7 +25,7 @@ FROM python:3.9-slim
 # Security: non-root user
 RUN groupadd -r titanic && useradd -r -g titanic -s /bin/false titanic
 
-RUN apt-get update && apt-get install -y --no-install-recommends \ 
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
