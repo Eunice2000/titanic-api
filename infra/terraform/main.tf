@@ -416,7 +416,20 @@ resource "aws_secretsmanager_secret_version" "titanic_api" {
   })
 }
 
+resource "aws_eks_access_entry" "admin_user" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = "arn:aws:iam::479664683730:user/devops-admin"  
+  type          = "STANDARD"
+}
 
+resource "aws_eks_access_policy_association" "admin_user_cluster_admin" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = aws_eks_access_entry.admin_user.principal_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  access_scope {
+    type = "cluster"
+  }
+}
 
 # ────────────────────────────────────────────────────────────────
 # Outputs
