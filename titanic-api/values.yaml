@@ -70,3 +70,7 @@ ingress:
         - path: /
           pathType: Prefix
   tls: []
+
+env:
+  APP_ENV: prod
+  LOG_LEVEL: info
