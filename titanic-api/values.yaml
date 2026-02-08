@@ -46,8 +46,8 @@ serviceAccount:
   name: titanic-api
   automount: true
   annotations: 
-        eks.amazonaws.com/role-arn: arn:aws:iam::479664683730:role/github-actions-ecr-push-role
-
+       eks.amazonaws.com/role-arn: arn:aws:iam::479664683730:role/external-secrets-operator-role
+       
 ingress:
   enabled: false
   annotations: {}
