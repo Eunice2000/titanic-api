@@ -7,7 +7,7 @@ image:
 
 service:
   type: ClusterIP
-  port: 80
+  port: 5000       # Updated from 80 → 5000
 
 resources:
   requests:
@@ -28,7 +28,7 @@ autoscaling:
 livenessProbe:
   httpGet:
     path: /health
-    port: 80
+    port: 5000     # Updated from 80 → 5000
   initialDelaySeconds: 15
   periodSeconds: 20
   failureThreshold: 3
@@ -36,7 +36,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /health
-    port: 80
+    port: 5000     # Updated from 80 → 5000
   initialDelaySeconds: 5
   periodSeconds: 10
   failureThreshold: 3
@@ -46,7 +46,7 @@ serviceAccount:
   name: titanic-api
   automount: true
   annotations: 
-        eks.amazonaws.com/role-arn: arn:aws:iam::479664683730:role/external-secrets-operator-role
+    eks.amazonaws.com/role-arn: arn:aws:iam::479664683730:role/external-secrets-operator-role
 
 ingress:
   enabled: false
