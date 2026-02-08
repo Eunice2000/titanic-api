@@ -25,7 +25,6 @@ FROM python:3.9-slim
 # Security: non-root user
 RUN groupadd -r titanic && useradd -r -g titanic -s /bin/false titanic
 
-# Minimal runtime deps (only what's truly needed, e.g. for psycopg2 if binary wheels fail)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
@@ -46,7 +45,6 @@ USER titanic
 
 EXPOSE 5000
 
-# Optional: Add HEALTHCHECK here too (complement to compose-level one)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:5000/ || exit 1
 

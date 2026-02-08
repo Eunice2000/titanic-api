@@ -2,8 +2,8 @@ replicaCount: 2
 
 image:
   repository: ""   # injected via CI/CD
-  tag: ""          # injected via CI/CD trigger
-  pullPolicy: Always
+  tag: ""          # injected via CI/CD
+  pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP

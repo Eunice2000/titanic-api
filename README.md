@@ -1,11 +1,11 @@
-# Titanic API - DevOps Assessment
+# Titanic API - Production Deployment
 
-This repository contains a production-ready implementation of the Titanic API with complete DevOps practices.
+## Quick Links Please click on the videos and watch the demo
+- [Setup Guide](SETUP-GUIDE.md)
+- [Video 1: Titanic API - Development Security Walkthrough | Docker & Flask Setup](https://youtu.be/u7KztsWoPAA)
+- [Video 2: PART2: From Dev to Prod  Containerizing & Deploying a Flask API on AWS EKS](https://youtu.be/I7mgVU41ys0)
 
-## Quick Start
-```bash
-# Development
-docker-compose up -d
-
-# Production build
-docker build -t titanic-api:latest -f docker/prod/Dockerfile ./app
+## Video Demonstrations
+Watch these walkthroughs to see the deployment in action:
+1. [Titanic API - Development Security Walkthrough | Docker & Flask Setup](https://youtu.be/u7KztsWoPAA)
+2. [From Dev to Prod  Containerizing & Deploying a Flask API on AWS EKS](https://youtu.be/I7mgVU41ys0)

@@ -1,3 +1,4 @@
+
 # ────────────────────────────────────────────────────────────────
 # Data Sources
 # ────────────────────────────────────────────────────────────────
@@ -5,6 +6,8 @@
 data "aws_availability_zones" "available" {
   state = "available"
 }
+
+data "aws_caller_identity" "current" {}
 
 # ────────────────────────────────────────────────────────────────
 # VPC Module
@@ -88,7 +91,6 @@ module "eks" {
   cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
   enable_cluster_creator_admin_permissions = true
 
-
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
@@ -102,23 +104,21 @@ module "eks" {
       instance_types = [var.node_instance_type]  # t4g.small
       capacity_type  = "SPOT"
 
-      # Critical fix: ARM AMI for t4g instances
       ami_type = "AL2_ARM_64"
 
       labels = {
         role = "general"
       }
 
-      # Taint block – THIS WAS MISSING THE = SIGN
-      taints = [
-        {
-          key    = "dedicated"
-          value  = "titanic-api"
-          effect = "NO_SCHEDULE"
-        }
-      ]
+      # Taint block - uncomment if needed
+      # taints = [
+      #   {
+      #     key    = "dedicated"
+      #     value  = "titanic-api"
+      #     effect = "NO_SCHEDULE"
+      #   }
+      # ]
 
-      # Optional: align with Docker resource limits
       block_device_mappings = {
         xvda = {
           device_name = "/dev/xvda"
@@ -259,7 +259,7 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 # ────────────────────────────────────────────────────────────────
-# IAM Role for GitHub Actions (ECR push only)
+# IAM Role for GitHub Actions
 # ────────────────────────────────────────────────────────────────
 
 data "aws_iam_policy_document" "github_assume_role" {
@@ -299,7 +299,7 @@ resource "aws_iam_role" "github_ecr_push" {
   }
 }
 
-# Policy: Allow push/pull to the titanic-api ECR repo
+# Policy: ECR push/pull permissions
 data "aws_iam_policy_document" "ecr_push_policy" {
   statement {
     effect = "Allow"
@@ -331,6 +331,79 @@ resource "aws_iam_role_policy" "ecr_push" {
   policy = data.aws_iam_policy_document.ecr_push_policy.json
 }
 
+# Policy: EKS access permissions (UPDATED with more permissions)
+data "aws_iam_policy_document" "eks_access_policy" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "eks:DescribeCluster",
+      "eks:ListClusters"
+    ]
+
+    # Restrict to your specific cluster
+    resources = [
+      "arn:aws:eks:${var.region}:${data.aws_caller_identity.current.account_id}:cluster/${var.cluster_name}"
+    ]
+  }
+  
+  statement {
+    effect = "Allow"
+    
+    actions = [
+      "eks:UpdateKubeconfig",
+      "eks:AccessKubernetesApi"  # NEW: Required for API access
+    ]
+    
+    resources = ["*"]  # These actions don't support resource-level permissions
+  }
+  
+  # NEW: Add STS permissions for authentication
+  statement {
+    effect = "Allow"
+    
+    actions = [
+      "sts:AssumeRole",
+      "sts:GetCallerIdentity"
+    ]
+    
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "github_eks_access" {
+  name   = "eks-access-policy"
+  role   = aws_iam_role.github_ecr_push.id
+  policy = data.aws_iam_policy_document.eks_access_policy.json
+}
+
+# NEW: Add Secrets Manager permissions for RDS credentials
+data "aws_iam_policy_document" "secrets_access_policy" {
+  statement {
+    effect = "Allow"
+    
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret"
+    ]
+    
+    resources = [
+      aws_secretsmanager_secret.titanic_api.arn,
+      aws_secretsmanager_secret.rds_password.arn
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "github_secrets_access" {
+  name   = "secrets-access-policy"
+  role   = aws_iam_role.github_ecr_push.id
+  policy = data.aws_iam_policy_document.secrets_access_policy.json
+}
+
+# ────────────────────────────────────────────────────────────────
+# Secrets Manager - Comprehensive RDS secrets
+# ────────────────────────────────────────────────────────────────
+
 resource "aws_secretsmanager_secret" "titanic_api" {
   name        = "/titanic-api/${var.environment}/rds"
   description = "All PostgreSQL connection info for Titanic API"
@@ -344,10 +417,38 @@ resource "aws_secretsmanager_secret_version" "titanic_api" {
     POSTGRES_DB       = aws_db_instance.postgres.db_name
     POSTGRES_HOST     = aws_db_instance.postgres.address
     POSTGRES_PORT     = aws_db_instance.postgres.port
+    SQLALCHEMY_DATABASE_URI = "postgresql://${"titanic_user"}:${random_password.db_password.result}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}"
+
   })
 }
 
+resource "kubernetes_config_map" "aws_auth" {
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapRoles = yamlencode([
+      {
+        rolearn  = "arn:aws:iam::479664683730:role/main-eks-node-group-20260125202521744300000004"
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups   = ["system:bootstrappers", "system:nodes"]
+      },
+      {
+        rolearn  = "arn:aws:iam::479664683730:role/github-actions-ecr-push-role"
+        username = "github-actions"
+        groups   = ["system:masters"]
+      }
+    ])
+  }
+}
+
+
+# ────────────────────────────────────────────────────────────────
 # Outputs
+# ────────────────────────────────────────────────────────────────
+
 output "ecr_repository_url" {
   value       = aws_ecr_repository.titanic_api.repository_url
   description = "ECR repo URI for pushing images"
@@ -357,19 +458,34 @@ output "github_ecr_role_arn" {
   value       = aws_iam_role.github_ecr_push.arn
   description = "IAM role ARN for GitHub Actions to assume"
 }
-# Outputs
+
 output "cluster_name" {
-  value = module.eks.cluster_name
+  value       = module.eks.cluster_name
+  description = "EKS cluster name"
 }
 
 output "cluster_endpoint" {
-  value = module.eks.cluster_endpoint
+  value       = module.eks.cluster_endpoint
+  description = "EKS cluster API endpoint"
 }
 
 output "rds_endpoint" {
-  value = aws_db_instance.postgres.endpoint
+  value       = aws_db_instance.postgres.endpoint
+  description = "RDS PostgreSQL endpoint"
 }
 
 output "rds_password_secret_arn" {
-  value = aws_secretsmanager_secret.rds_password.arn
+  value       = aws_secretsmanager_secret.rds_password.arn
+  description = "Secret ARN for RDS password"
+}
+
+output "comprehensive_secret_arn" {
+  value       = aws_secretsmanager_secret.titanic_api.arn
+  description = "Secret ARN containing all RDS connection info"
+}
+
+output "cluster_certificate_authority_data" {
+  value       = module.eks.cluster_certificate_authority_data
+  description = "Base64 encoded certificate data required to communicate with the cluster"
+  sensitive   = true
 }
