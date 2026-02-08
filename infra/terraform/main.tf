@@ -390,12 +390,12 @@ resource "kubernetes_config_map" "aws_auth" {
   data = {
     mapRoles = yamlencode([
       {
-        rolearn  = "arn:aws:iam::479664683730:role/main-eks-node-group-20260125202521744300000004"
+        rolearn  = module.eks.eks_managed_node_groups["main"].iam_role_arn
         username = "system:node:{{EC2PrivateDNSName}}"
         groups   = ["system:bootstrappers", "system:nodes"]
       },
       {
-        rolearn  = "arn:aws:iam::479664683730:role/github-actions-ecr-push-role"
+        rolearn  = aws_iam_role.github_ecr_push.arn
         username = "github-actions"
         groups   = ["system:masters"]
       }
