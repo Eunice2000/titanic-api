@@ -1,0 +1,106 @@
+name: Terraform - Manage Infrastructure
+
+# This workflow is MANUAL ONLY for safety — trigger from GitHub UI Actions tab
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform (plan = preview, apply = create/update, destroy = DELETE ALL)'
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+      auto_approve:
+        description: 'Use -auto-approve? (Only for apply/destroy — dangerous!)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write       # Required for AWS OIDC federation
+  contents: read
+  actions: write        # Optional: allows artifact upload
+
+jobs:
+  terraform:
+    name: Terraform ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    environment: production   # ← Optional: add this if you want required reviewers/approvals in GitHub Environments
+
+    defaults:
+      run:
+        working-directory: infra/terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ROLE_ARN }}:role/github-actions-oidc-role   # ← REPLACE with your actual role ARN from SETUP-GUIDE / AWS console
+          aws-region: us-east-1                                                           # ← From SETUP-GUIDE: us-east-1
+          role-session-name: GitHubActions-Terraform-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.x   # Adjust if your Terraform code requires a different version
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      # ────────────────────────────────────────────────
+      # PLAN (always run — safe preview)
+      # ────────────────────────────────────────────────
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -out=tfplan
+        continue-on-error: true   # So we can still upload even if plan has warnings
+
+      - name: Upload Terraform Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ github.run_id }}
+          path: infra/terraform/tfplan
+          retention-days: 7
+
+      # ────────────────────────────────────────────────
+      # APPLY
+      # ────────────────────────────────────────────────
+      - name: Terraform Apply
+        if: inputs.action == 'apply'
+        run: |
+          if [ "${{ inputs.auto_approve }}" = "true" ]; then
+            terraform apply -auto-approve tfplan
+          else
+            terraform apply tfplan
+          fi
+
+      # ────────────────────────────────────────────────
+      # DESTROY (extra caution)
+      # ────────────────────────────────────────────────
+      - name: Terraform Destroy - WARNING
+        if: inputs.action == 'destroy'
+        run: |
+          echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+          echo "!!! THIS WILL PERMANENTLY DELETE ALL MANAGED AWS RESOURCES !!!"
+          echo "!!! Including EKS cluster, VPC, RDS, ECR repo, IAM roles   !!!"
+          echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+          echo ""
+          echo "To confirm, the workflow must be triggered with 'destroy'."
+          echo "Proceeding only if you intentionally chose this option."
+
+      - name: Terraform Destroy
+        if: inputs.action == 'destroy'
+        run: |
+          if [ "${{ inputs.auto_approve }}" = "true" ]; then
+            terraform destroy -auto-approve
+          else
+            terraform destroy   # Will prompt for 'yes' (non-interactive jobs will fail unless auto_approve)
+          fi
