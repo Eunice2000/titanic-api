@@ -17,7 +17,9 @@ resources:
     cpu: 400m
     memory: 512Mi
 
-envFromSecret: titanic-api-secret
+envFrom:
+  - secretRef:
+      name: titanic-api-secret
 
 autoscaling:
   enabled: true
