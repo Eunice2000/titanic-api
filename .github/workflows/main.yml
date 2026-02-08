@@ -103,7 +103,7 @@ jobs:
       - name: Apply External Secrets manifests
         run: |
           kubectl apply -f k8s/titanic-api-externalsecret.yaml
-          kubectl apply -f k8s/externalsecret-config.yaml
+          kubectl apply -f k8s/external-secrets-config.yaml
 
           # Optional: Wait briefly for ESO to sync (usually fast)
           sleep 10
