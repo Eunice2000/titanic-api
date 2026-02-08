@@ -1,4 +1,4 @@
-# Builder stage: Install dependencies
+## Builder stage: Install dependencies
 FROM python:3.9-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
