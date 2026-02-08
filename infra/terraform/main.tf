@@ -104,7 +104,7 @@ module "eks" {
       instance_types = [var.node_instance_type]  # t4g.small
       capacity_type  = "SPOT"
 
-      ami_type = "AL2023_ARM_64"
+      ami_type = "AL2023_ARM_64_STANDARD"
 
       labels = {
         role = "general"
