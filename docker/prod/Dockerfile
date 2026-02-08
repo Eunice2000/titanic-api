@@ -1,7 +1,7 @@
 ## Builder stage: Install dependenciess
 FROM python:3.9-slim AS builder
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
+ENV PYTHONDONTWRITEBYTECODE=1 \ 
     PYTHONUNBUFFERED=1
 
 # Install build deps only (no runtime debug tools)
