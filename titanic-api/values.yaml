@@ -21,16 +21,16 @@ envFrom:
   - secretRef:
       name: titanic-api-secret
 
-env:
-  - name: DATABASE_URL
-    valueFrom:
-      secretKeyRef:
-        name: titanic-api-secret
-        key: SQLALCHEMY_DATABASE_URI
-  - name: APP_ENV
-    value: prod
-  - name: LOG_LEVEL
-    value: info
+# env:
+#   - name: DATABASE_URL
+#     valueFrom:
+#       secretKeyRef:
+#         name: titanic-api-secret
+#         key: SQLALCHEMY_DATABASE_URI
+#   - name: APP_ENV
+#     value: prod
+#   - name: LOG_LEVEL
+#     value: info
 
 autoscaling:
   enabled: true
