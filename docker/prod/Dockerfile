@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Create venv and install Python deps
+## Create venv and install Python deps
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
