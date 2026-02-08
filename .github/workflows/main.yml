@@ -97,6 +97,18 @@ jobs:
       - name: Configure kubeconfig
         run: |
           aws eks update-kubeconfig --region us-east-1 --name titanic-api-cluster
+          
+      - name: Apply External Secrets manifests
+        run: |
+          kubectl apply -f k8s/external-secrets/secretstore.yaml
+          kubectl apply -f k8s/external-secrets/externalsecret.yaml
+
+          # Optional: Wait briefly for ESO to sync (usually fast)
+          sleep 10
+
+          # Verify (for debugging in Actions logs)
+          kubectl get externalsecret titanic-api-db-credentials -n prod -o yaml || echo "ExternalSecret not yet ready"
+          kubectl get secret titanic-api-secret -n prod -o yaml || echo "Kubernetes Secret not synced yet"
 
       - name: Deploy Helm chart
         run: |
